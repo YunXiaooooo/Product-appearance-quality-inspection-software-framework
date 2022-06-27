@@ -128,7 +128,7 @@ namespace Controller {
 		// 判断是否有某个订单
 		bool tryToLoadTargetOrder(std::string orderNumber);
 		// 创建新订单
-		bool tryCreateNewOrder(std::string orderNumber, std::string createTime, std::string orderQuantity);
+		bool tryCreateNewOrder(std::string orderNumber, std::string createTime, std::string orderQuantity, int model_id);
 		// 根据订单编号查询这个订单安排的用户情况
 		std::vector<std::vector<std::string>> getUsersMsgSearchByOrderNumber(std::string orderNumber);
 		// 添加订单任务安排
@@ -147,6 +147,8 @@ namespace Controller {
 		// 参数表（根据模型名称与param大小去创建，因为不知道有多少列）
 		std::vector<std::vector<int>> readTargetModelSettingParam(std::string targetModelName);	// 读取对应模型的模型参数
 		void saveTargetModelSettingParam(std::vector<std::vector<int>> &mSettingParam, std::string targetModelName);	// 保存对应的模型参数
+		void saveTaskResult(std::string task_id, std::string test_result, std::string createTime, std::string user_id,
+			std::string image_path, std::vector<std::string> check);	// 保存单词检测结果
 		// <blockIndex, cameraIndex>
 		std::map<int, int> readTargetModelBlock2CameraIndexParam(std::string targetModelName);	// 框对应的相机坐标
 		void saveTargetModelBlock2CameraIndexParam(std::map<int, int> &mBlockToCameraIndex, std::string targetModelName);

@@ -260,9 +260,9 @@ namespace Controller {
 	bool DomainController::tryToLoadTargetOrder(std::string orderNumber) {
 		try
 		{
-			int colNum = mDataBase->findColNumsFromTargetTable("order_info");
+			int colNum = mDataBase->findColNumsFromTargetTable("task_info");
 			std::vector<std::vector<std::string>> mTable =
-				mDataBase->queryAllData("order_info", colNum, "order_number", orderNumber, "id", true);
+				mDataBase->queryAllData("task_info", colNum, "task_number", orderNumber, "id", true);
 			if (mTable.size() == 0) {	// 验证账户id
 				std::cout << "无此订单编号" << std::endl;
 				return false;
@@ -276,10 +276,10 @@ namespace Controller {
 		return true;
 	}
 
-	bool DomainController::tryCreateNewOrder(std::string orderNumber, std::string createTime, std::string orderQuantity) {
+	bool DomainController::tryCreateNewOrder(std::string orderNumber, std::string createTime, std::string orderQuantity, int model_id) {
 		try
 		{
-			int hasRows = mDataBase->findRowNumsFromTargetTable("order_info");
+			int hasRows = mDataBase->findRowNumsFromTargetTable("task_info");
 
 			std::vector<std::string> newOrderRow;
 			newOrderRow.push_back(std::to_string(hasRows));
@@ -289,8 +289,9 @@ namespace Controller {
 			newOrderRow.push_back("0");
 			newOrderRow.push_back("0");
 			newOrderRow.push_back("0");
+			newOrderRow.push_back(std::to_string(model_id));
 
-			mDataBase->insertSingleRowData("order_info", newOrderRow);
+			mDataBase->insertSingleRowData("task_info", newOrderRow);
 		}
 		catch (const std::exception &e)
 		{
@@ -302,9 +303,9 @@ namespace Controller {
 
 	std::vector<std::vector<std::string>> DomainController::getUsersMsgSearchByOrderNumber(std::string orderNumber) {
 		try {
-			int colNum = mDataBase->findColNumsFromTargetTable("order_and_user_info");
+			int colNum = mDataBase->findColNumsFromTargetTable("task_and_user_info");
 			std::vector<std::vector<std::string>> mTable =
-				mDataBase->queryAllData("order_and_user_info", colNum, "order_number", orderNumber, "id", true);
+				mDataBase->queryAllData("task_and_user_info", colNum, "task_number", orderNumber, "id", true);
 			std::vector<std::vector<std::string>> tmpInfo;
 
 			if (mTable.size() == 0) {
@@ -328,7 +329,7 @@ namespace Controller {
 	bool DomainController::addOrderNewUserTask(std::string orderNumber, std::string newUserID, std::string targetTotalNum) {
 		try
 		{
-			int hasRows = mDataBase->findRowNumsFromTargetTable("order_and_user_info");
+			int hasRows = mDataBase->findRowNumsFromTargetTable("task_and_user_info");
 
 			std::vector<std::string> newOrderAndUserRow;
 			newOrderAndUserRow.push_back(std::to_string(hasRows));
@@ -340,7 +341,7 @@ namespace Controller {
 			newOrderAndUserRow.push_back("0");
 			newOrderAndUserRow.push_back("0");
 
-			mDataBase->insertSingleRowData("order_and_user_info", newOrderAndUserRow);
+			mDataBase->insertSingleRowData("task_and_user_info", newOrderAndUserRow);
 		}
 		catch (const std::exception &e)
 		{
@@ -352,9 +353,9 @@ namespace Controller {
 
 	std::vector<std::vector<std::string>> DomainController::getOrderMsgSearchByUserID(std::string userID) {
 		try {
-			int colNum = mDataBase->findColNumsFromTargetTable("order_and_user_info");
+			int colNum = mDataBase->findColNumsFromTargetTable("task_and_user_info");
 			std::vector<std::vector<std::string>> mTable =
-				mDataBase->queryAllData("order_and_user_info", colNum, "user_id", userID, "id", true);
+				mDataBase->queryAllData("task_and_user_info", colNum, "user_id", userID, "id", true);
 			std::vector<std::vector<std::string>> tmpInfo;
 
 			if (mTable.size() == 0) {
@@ -377,9 +378,9 @@ namespace Controller {
 
 	std::vector<std::string> DomainController::getTargetOrderMsg(std::string orderNumber) {
 		try {
-			int colNum = mDataBase->findColNumsFromTargetTable("order_info");
+			int colNum = mDataBase->findColNumsFromTargetTable("task_info");
 			std::vector<std::vector<std::string>> mTable =
-				mDataBase->queryAllData("order_info", colNum, "order_number", orderNumber, "id", true);
+				mDataBase->queryAllData("task_info", colNum, "task_number", orderNumber, "id", true);
 			std::vector<std::string> tmpInfo;
 			if (mTable.size() == 1) {
 				for (int i = 1; i < mTable[0].size(); ++i) {
@@ -744,6 +745,72 @@ namespace Controller {
 		else {
 			std::cout << "DomainController::saveTargetModelCamera2BlockIndexParam()->not find targetSaveModelIndex" << std::endl;
 		}
+	}
+
+
+	void  DomainController::saveTaskResult(std::string task_id, std::string test_result, std::string createTime, std::string user_id,
+		std::string image_path, std::vector<std::string> check)
+	{
+		// 添加记录到task_id + "_results"表
+
+		std::vector<std::string> colName;
+		colName.push_back("id");
+		colName.push_back("task_id");
+		colName.push_back("test_result");
+		colName.push_back("createTime");
+		colName.push_back("user_id");
+		colName.push_back("image_path");
+		for (int i = 0; i < check.size(); ++i) 
+		{
+			colName.push_back(std::string("check" + std::to_string(i + 1)));
+		}
+
+		std::string tmpTableName = task_id + "_results";
+		if (!mDataBase->findTargetTable(tmpTableName.c_str())) {	// 如果这个表不存在的话
+			// 新建表格
+			try
+			{
+				mDataBase->createTargetTable(tmpTableName.c_str(), colName);
+			}
+			catch (const std::exception& e)
+			{
+				std::cout << "DomainController::saveTaskResult(create)->" << e.what() << std::endl;
+			}
+		}
+		
+
+		// 往表格中插入数据(增加id列)
+		std::vector<std::string> data;
+		int id = -1;
+		try
+		{
+			id = mDataBase->findRowNumsFromTargetTable(tmpTableName.c_str());
+		}
+		catch (const std::exception& e)
+		{
+			std::cout << "DomainController::saveTaskResult->" << e.what() << std::endl;
+		}
+		data.push_back(std::to_string(id + 1));
+		data.push_back(task_id);
+		data.push_back(test_result);
+		data.push_back(createTime);
+		data.push_back(user_id);
+		data.push_back(image_path);
+		for (int i = 0; i < check.size(); ++i) 
+		{
+			data.push_back(check[i]);
+		}
+
+		try
+		{
+			mDataBase->insertSingleRowData(tmpTableName.c_str(), data);
+		}
+		catch (const std::exception& e)
+		{
+			std::cout << "DomainController::saveTaskResult(save)->" << e.what() << std::endl;
+		}
+	
+	
 	}
 
 	/********************************Algorithm Controller********************************/

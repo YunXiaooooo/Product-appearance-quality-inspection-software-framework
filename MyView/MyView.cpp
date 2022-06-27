@@ -423,11 +423,29 @@ namespace View {
 					QString targetOrderQuantity = QInputDialog::getText(this, QStringLiteral("Note"),
 						QStringLiteral("Please enter the product quantity of this order"), QLineEdit::Normal,
 						"", &getTargetOrderNumber);
-					if (getTargetOrderNumber && !targetOrderQuantity.isEmpty()) {
+					bool getModel = false;
+					QString targetModel = QInputDialog::getText(this, QStringLiteral("Note"),
+						QStringLiteral("Please enter the Model name"), QLineEdit::Normal,
+						"", &getModel);
+					int model_id = -1;
+					if (getModel && !targetModel.isEmpty())
+					{
+						std::string inputName(targetModel.toStdString());
+						std::vector<std::string> names = Controller::DomainController::getInstance()->readAllModelNames();
+						for (int i=0,length = names.size();i<length;++i)
+						{
+							if (names[i] == inputName)
+							{
+								model_id = i;
+								break;
+							}
+						}
+					}
+					if (getTargetOrderNumber && !targetOrderQuantity.isEmpty() && model_id != -1) {
 						// 在数据库中创建
 						QDateTime currentDateTime = QDateTime::currentDateTime();
 						QString currentDateTimeStr = currentDateTime.toString("yyyy.MM.dd hh:mm:ss");
-						bool tryCreateNewOrder = Controller::DomainController::getInstance()->tryCreateNewOrder(tmpTargetOrderNumber, currentDateTimeStr.toStdString(), targetOrderQuantity.toStdString());
+						bool tryCreateNewOrder = Controller::DomainController::getInstance()->tryCreateNewOrder(tmpTargetOrderNumber, currentDateTimeStr.toStdString(), targetOrderQuantity.toStdString(), model_id);
 
 						if (tryCreateNewOrder) {
 							std::cout << "创建新订单成功" << std::endl;
@@ -461,15 +479,15 @@ namespace View {
 		ui.treeWidgetOrderNumberToUser->clear();
 		ui.treeWidgetOrderNumberToUser->setColumnCount(3); //设置列数
 		QStringList tmpHeaderList;
-		tmpHeaderList << QStringLiteral("Order No. - ID") << QStringLiteral("Total") << QStringLiteral("Completed Quantity");
+		tmpHeaderList << QStringLiteral("Task No. - ID") << QStringLiteral("Total") << QStringLiteral("Completed Quantity");
 		ui.treeWidgetOrderNumberToUser->setHeaderLabels(tmpHeaderList); //设置标题头
 
 		QStringList orderNumberItemList;
 		orderNumberItemList << QString::fromStdString(orderNumber);
 		int orderTotalNum = 0, orderHaveFinishNum = 0;
 		for (int i = 0; i < mCurrentMsgSearchByOrderNum.size(); ++i) {
-			orderTotalNum += atoi(mCurrentMsgSearchByOrderNum[0][1].c_str());
-			orderHaveFinishNum += atoi(mCurrentMsgSearchByOrderNum[0][2].c_str());
+			orderTotalNum += atoi(mCurrentMsgSearchByOrderNum[i][1].c_str());
+			orderHaveFinishNum += atoi(mCurrentMsgSearchByOrderNum[i][2].c_str());
 		}
 		orderNumberItemList << QString::fromStdString(std::to_string(orderTotalNum)) << QString::fromStdString(std::to_string(orderHaveFinishNum));
 
@@ -576,15 +594,15 @@ namespace View {
 		ui.treeWidgetUserToOrderNumber->clear();
 		ui.treeWidgetUserToOrderNumber->setColumnCount(3); //设置列数
 		QStringList tmpHeaderList;
-		tmpHeaderList << QStringLiteral("ID - Order No.") << QStringLiteral("Total") << QStringLiteral("Completed Quantity");
+		tmpHeaderList << QStringLiteral("ID - Task No.") << QStringLiteral("Total") << QStringLiteral("Completed Quantity");
 		ui.treeWidgetUserToOrderNumber->setHeaderLabels(tmpHeaderList); //设置标题头
 
 		QStringList userItemList;
 		userItemList << QString::fromStdString(userID);
 		int userTotalNum = 0, userHaveFinishNum = 0;
 		for (int i = 0; i < mQueryMsgSearchByUserID.size(); ++i) {
-			userTotalNum += atoi(mQueryMsgSearchByUserID[0][1].c_str());
-			userHaveFinishNum += atoi(mQueryMsgSearchByUserID[0][2].c_str());
+			userTotalNum += atoi(mQueryMsgSearchByUserID[i][1].c_str());
+			userHaveFinishNum += atoi(mQueryMsgSearchByUserID[i][2].c_str());
 		}
 		userItemList << QString::fromStdString(std::to_string(userTotalNum)) << QString::fromStdString(std::to_string(userHaveFinishNum));
 
